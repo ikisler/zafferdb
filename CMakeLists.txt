@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(ZefferDB)
+project(ZafferDB)
 
 add_definitions(-std=c++17)
 
@@ -10,7 +10,7 @@ find_package(OpenSSL REQUIRED)
 include_directories(include)
 file(GLOB SOURCES "src/*.cpp")
 
-add_executable(ZefferDb src/main.cpp)
+add_executable(ZafferDb ${SOURCES})
 
-target_link_libraries(ZefferDb OpenSSL::SSL)
+target_link_libraries(ZafferDb OpenSSL::SSL)
 

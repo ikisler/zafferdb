@@ -1,4 +1,4 @@
-#include "include/Database.h"
+#include "Database.h"
 
 #include <openssl/sha.h>
 
@@ -24,15 +24,30 @@ std::string Database::sha256(const std::string str) {
   return ss.str();
 }
 
-bool Database::setValue(std::string key, std::string value) {
-  std::string hashedKey = sha256(key);
+std::string Database::getValueForStorage(std::string hashedKey, std::string value)
+{
+  return hashedKey + ":::::" + value;
+}
 
-  if (std::filesystem::exists("data.dat")) {
+bool Database::createFileAndAddValue(std::string hashedKey, std::string value)
+{
+    std::ofstream dataFile;
+    dataFile.open(Database::DATA_FILE_NAME.c_str(), std::ios::app);
+    if (!dataFile.is_open()) {
+      return false;
+    }
+    dataFile << getValueForStorage(hashedKey, value) << std::endl;
+    dataFile.close();
+    return true;
+}
+
+bool Database::setValueInFile(std::string hashedKey, std::string value)
+{
     std::fstream dataFile;
-    dataFile.open("data.dat");
+    dataFile.open(Database::DATA_FILE_NAME.c_str());
 
     std::ofstream temp;
-    temp.open("temp.dat");
+    temp.open(Database::TEMP_FILE_NAME.c_str());
 
     if (!dataFile.is_open() || !temp.is_open()) {
       return false;
@@ -43,11 +58,11 @@ bool Database::setValue(std::string key, std::string value) {
     while (std::getline(dataFile, line, ':')) {
       if (line != hashedKey) {
         temp << line << ":";  // have to make up for the ":" that getline ate
-        std::getline(dataFile, line);
-        temp << line << "\n";
+        std::getline(dataFile, line); // get the rest of the data for this line and pipe it in too
+        temp << line << std::endl;
         continue;
       } else {
-        temp << hashedKey << ":::::" << value << "\n";
+        temp << getValueForStorage(hashedKey, value) << std::endl;
         std::getline(dataFile, line);
         updated = true;
       }
@@ -56,27 +71,29 @@ bool Database::setValue(std::string key, std::string value) {
     if (!updated) {
       dataFile.close();
       std::ofstream dataFile;
-      dataFile.open("data.dat", std::ios::app);
-      dataFile << hashedKey << ":::::" << value << "\n";
+      dataFile.open(Database::DATA_FILE_NAME.c_str(), std::ios::app);
+      dataFile << getValueForStorage(hashedKey, value) << std::endl;
     }
 
     dataFile.close();
     temp.close();
 
     if (updated) {
-      remove("data.dat");
-      rename("temp.dat", "data.dat");
+      remove(Database::DATA_FILE_NAME.c_str());
+      rename(Database::TEMP_FILE_NAME.c_str(), Database::DATA_FILE_NAME.c_str());
     } else {
-      remove("temp.dat");
+      remove(Database::TEMP_FILE_NAME.c_str());
     }
+    return true;
+}
+
+bool Database::setValue(std::string key, std::string value) {
+  std::string hashedKey = sha256(key);
+
+  if (std::filesystem::exists(Database::DATA_FILE_NAME.c_str())) {
+    setValueInFile(hashedKey, value);
   } else {
-    std::ofstream dataFile;
-    dataFile.open("data.dat", std::ios::app);
-    if (!dataFile.is_open()) {
-      return false;
-    }
-    dataFile << hashedKey << ":::::" << value << "\n";
-    dataFile.close();
+    return createFileAndAddValue(hashedKey, value);
   }
 
   return true;
@@ -84,10 +101,10 @@ bool Database::setValue(std::string key, std::string value) {
 
 bool Database::deleteValue(std::string key) {
   std::ifstream dataFile;
-  dataFile.open("data.dat");
+  dataFile.open(Database::DATA_FILE_NAME.c_str());
 
   std::ofstream temp;
-  temp.open("temp.dat");
+  temp.open(Database::TEMP_FILE_NAME.c_str());
 
   if (!dataFile.is_open() || !temp.is_open()) {
     return false;
@@ -100,7 +117,7 @@ bool Database::deleteValue(std::string key) {
     if (line != hashedKey) {
       temp << line << ":";  // have to make up for the ":" that getline ate
       std::getline(dataFile, line);
-      temp << line << "\n";
+      temp << line << std::endl;
     } else {
       std::getline(dataFile, line);
     }
@@ -109,8 +126,8 @@ bool Database::deleteValue(std::string key) {
   dataFile.close();
   temp.close();
 
-  remove("data.dat");
-  rename("temp.dat", "data.dat");
+  remove(Database::DATA_FILE_NAME.c_str());
+  rename(Database::TEMP_FILE_NAME.c_str(), Database::DATA_FILE_NAME.c_str());
 
   return true;
 }
@@ -119,7 +136,7 @@ bool Database::exists(std::string key) {
   std::string hashedKey = sha256(key);
 
   std::ifstream readFile;
-  readFile.open("data.dat");
+  readFile.open(Database::DATA_FILE_NAME.c_str());
   if (!readFile.is_open()) {
     return "";
   }
@@ -143,7 +160,7 @@ std::string Database::getValue(std::string key) {
   std::string hashedKey = sha256(key);
 
   std::ifstream readFile;
-  readFile.open("data.dat");
+  readFile.open(Database::DATA_FILE_NAME.c_str());
   if (!readFile.is_open()) {
     return "";
   }

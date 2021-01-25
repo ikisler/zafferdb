@@ -17,4 +17,9 @@ class Database {
 
  private:
   std::string sha256(const std::string str);
+  std::string getValueForStorage(std::string hashedKey, std::string value);
+  bool createFileAndAddValue(std::string hashedKey, std::string value);
+  bool setValueInFile(std::string hashedKey, std::string value);
+  const std::string DATA_FILE_NAME = "data.dat";
+  const std::string TEMP_FILE_NAME = "temp.dat";
 };
