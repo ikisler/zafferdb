@@ -1,3 +1,4 @@
+#include "FileHandler.h"
 #include "Database.h"
 
 #include <openssl/sha.h>
@@ -9,6 +10,12 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+
+Database::Database()
+{
+  dataFile = FileHandler(Database::DATA_FILE_NAME);
+  tempFile = FileHandler(Database::TEMP_FILE_NAME);
+}
 
 // https://stackoverflow.com/a/10632725
 std::string Database::sha256(const std::string str) {

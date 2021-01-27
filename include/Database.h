@@ -1,3 +1,5 @@
+#include "FileHandler.h"
+
 #include <openssl/sha.h>
 
 #include <filesystem>
@@ -10,6 +12,7 @@
 
 class Database {
  public:
+  Database();
   bool setValue(std::string key, std::string value);
   bool deleteValue(std::string key);
   bool exists(std::string key);
@@ -22,4 +25,6 @@ class Database {
   bool setValueInFile(std::string hashedKey, std::string value);
   const std::string DATA_FILE_NAME = "data.dat";
   const std::string TEMP_FILE_NAME = "temp.dat";
+  FileHandler dataFile;
+  FileHandler tempFile;
 };
