@@ -1,5 +1,3 @@
-#include "FileHandler.h"
-
 #include <openssl/sha.h>
 
 #include <filesystem>
@@ -9,6 +7,8 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+
+#include "FileHandler.h"
 
 class Database {
  public:
