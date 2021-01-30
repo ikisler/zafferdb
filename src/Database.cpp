@@ -38,52 +38,45 @@ std::string Database::getValueForStorage(std::string hashedKey, std::string valu
 
 bool Database::createFileAndAddValue(std::string hashedKey, std::string value)
 {
-    std::ofstream dataFile;
-    dataFile.open(Database::DATA_FILE_NAME.c_str(), std::ios::app);
-    if (!dataFile.is_open()) {
+    std::fstream* file = dataFile.getAppendFile();
+    if (!file->is_open()) {
       return false;
     }
-    dataFile << getValueForStorage(hashedKey, value) << std::endl;
-    dataFile.close();
+    *file << getValueForStorage(hashedKey, value) << std::endl;
     return true;
 }
 
 bool Database::setValueInFile(std::string hashedKey, std::string value)
 {
-    std::fstream dataFile;
-    dataFile.open(Database::DATA_FILE_NAME.c_str());
+    std::fstream* file = dataFile.getReadFile();
+    std::fstream* temp = tempFile.getAppendFile();
 
-    std::ofstream temp;
-    temp.open(Database::TEMP_FILE_NAME.c_str());
-
-    if (!dataFile.is_open() || !temp.is_open()) {
+    if (!file->is_open() || !temp->is_open()) {
       return false;
     }
 
     bool updated = false;
     std::string line;
-    while (std::getline(dataFile, line, ':')) {
+    while (std::getline(*file, line, ':')) {
       if (line != hashedKey) {
-        temp << line << ":";  // have to make up for the ":" that getline ate
-        std::getline(dataFile, line); // get the rest of the data for this line and pipe it in too
-        temp << line << std::endl;
+        *temp << line << ":";  // have to make up for the ":" that getline ate
+        std::getline(*file, line); // get the rest of the data for this line and pipe it in too
+        *temp << line << std::endl;
         continue;
       } else {
-        temp << getValueForStorage(hashedKey, value) << std::endl;
-        std::getline(dataFile, line);
+        *temp << getValueForStorage(hashedKey, value) << std::endl;
+        std::getline(*file, line);
         updated = true;
       }
     }
 
     if (!updated) {
-      dataFile.close();
-      std::ofstream dataFile;
-      dataFile.open(Database::DATA_FILE_NAME.c_str(), std::ios::app);
-      dataFile << getValueForStorage(hashedKey, value) << std::endl;
+        // Made it through the whole file without finding the hash, key must be new and we need to add the value
+        file->close();
+        file = dataFile.getAppendFile();
+      
+       *file << getValueForStorage(hashedKey, value) << std::endl;
     }
-
-    dataFile.close();
-    temp.close();
 
     if (updated) {
       remove(Database::DATA_FILE_NAME.c_str());
@@ -107,31 +100,25 @@ bool Database::setValue(std::string key, std::string value) {
 }
 
 bool Database::deleteValue(std::string key) {
-  std::ifstream dataFile;
-  dataFile.open(Database::DATA_FILE_NAME.c_str());
+  std::fstream* file = dataFile.getReadFile();
+  std::fstream* temp = tempFile.getAppendFile();
 
-  std::ofstream temp;
-  temp.open(Database::TEMP_FILE_NAME.c_str());
-
-  if (!dataFile.is_open() || !temp.is_open()) {
+  if (!file->is_open() || !temp->is_open()) {
     return false;
   }
 
   std::string hashedKey = sha256(key);
 
   std::string line;
-  while (std::getline(dataFile, line, ':')) {
+  while (std::getline(*file, line, ':')) {
     if (line != hashedKey) {
-      temp << line << ":";  // have to make up for the ":" that getline ate
-      std::getline(dataFile, line);
-      temp << line << std::endl;
+      *temp << line << ":";  // have to make up for the ":" that getline ate
+      std::getline(*file, line);
+      *temp << line << std::endl;
     } else {
-      std::getline(dataFile, line);
+      std::getline(*file, line);
     }
   }
-
-  dataFile.close();
-  temp.close();
 
   remove(Database::DATA_FILE_NAME.c_str());
   rename(Database::TEMP_FILE_NAME.c_str(), Database::DATA_FILE_NAME.c_str());
@@ -142,23 +129,19 @@ bool Database::deleteValue(std::string key) {
 bool Database::exists(std::string key) {
   std::string hashedKey = sha256(key);
 
-  std::ifstream readFile;
-  readFile.open(Database::DATA_FILE_NAME.c_str());
-  if (!readFile.is_open()) {
+  std::fstream* file = dataFile.getReadFile();
+  if (!file->is_open()) {
     return "";
   }
 
   std::string line;
-  while (std::getline(readFile, line, ':')) {
+  while (std::getline(*file, line, ':')) {
     if (line != hashedKey) {
-      std::getline(readFile, line);
+      std::getline(*file, line);
     } else {
-      readFile.close();
       return true;
     }
   }
-
-  readFile.close();
 
   return false;
 }
@@ -166,28 +149,26 @@ bool Database::exists(std::string key) {
 std::string Database::getValue(std::string key) {
   std::string hashedKey = sha256(key);
 
-  std::ifstream readFile;
-  readFile.open(Database::DATA_FILE_NAME.c_str());
-  if (!readFile.is_open()) {
+  std::fstream* file = dataFile.getReadFile();
+  if (!file->is_open()) {
     return "";
   }
 
   std::string line;
-  while (std::getline(readFile, line, ':')) {
+  while (std::getline(*file, line, ':')) {
     if (line != hashedKey) {
-      std::getline(readFile, line);
+      std::getline(*file, line);
       continue;
     }
 
-    std::getline(readFile, line, ':');
-    std::getline(readFile, line, ':');
-    std::getline(readFile, line, ':');
-    std::getline(readFile, line, ':');
+    std::getline(*file, line, ':');
+    std::getline(*file, line, ':');
+    std::getline(*file, line, ':');
+    std::getline(*file, line, ':');
 
-    std::getline(readFile, line);
+    std::getline(*file, line);
     break;
   }
 
-  readFile.close();
   return line;
 }
