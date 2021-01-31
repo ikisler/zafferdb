@@ -1,12 +1,38 @@
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "Database.h"
+#include "Tokenizer.h"
 
 int main() {
-  std::cout << "HELLO" << std::endl;
-
   Database db;
+
+  std::cout << "ZafferDB" << std::endl;
+  std::cout << "Created by Isabeau Kisler, 2021" << std::endl;
+  std::cout << std::endl;
+
+  std::string command;
+  std::string key;
+  std::string value;
+
+  Tokenizer tokenizer;
+
+  while (true) {
+    std::cout << "zafferdb> ";
+
+    Tokenizer::Token token = tokenizer.tokenizeInput(std::cin);
+
+    std::cout << token.command << std::endl;
+    std::cout << token.key << std::endl;
+    std::cout << token.value << std::endl;
+
+    if (token.command == "exit") {
+      std::cout << std::endl << "Adieu" << std::endl;
+      break;
+    }
+  }
+  return 0;
 
   std::cout << "Set value: FIRST, FIRST CONTENT"
             << db.setValue("FIRST", "FIRST CONTENT") << std::endl;
