@@ -3,7 +3,12 @@
 #include <string>
 
 #include "Database.h"
+#include "Parser.h"
 #include "Tokenizer.h"
+
+void simpleOutputHandler(bool success) {
+  std::cout << (success ? "Success!" : "Failure") << std::endl;
+}
 
 int main() {
   Database db;
@@ -17,38 +22,39 @@ int main() {
   std::string value;
 
   Tokenizer tokenizer;
+  Parser parser;
+  bool success;
 
   while (true) {
     std::cout << "zafferdb> ";
 
     Tokenizer::Token token = tokenizer.tokenizeInput(std::cin);
 
-    std::cout << token.command << std::endl;
-    std::cout << token.key << std::endl;
-    std::cout << token.value << std::endl;
+    Command command = parser.parse(token);
 
-    if (token.command == "exit") {
-      std::cout << std::endl << "Adieu" << std::endl;
-      break;
+    switch (command) {
+      case Command::exit:
+        std::cout << std::endl << "Adieu" << std::endl;
+        return 0;
+      case Command::set:
+        success = db.setValue(token.key, token.value);
+        simpleOutputHandler(success);
+        break;
+      case Command::get:
+        std::cout << db.getValue(token.key) << std::endl;
+        break;
+      case Command::exists:
+        success = db.exists(token.key);
+        simpleOutputHandler(success);
+        break;
+      case Command::remove:
+        success = db.deleteValue(token.key);
+        simpleOutputHandler(success);
+        break;
+      case Command::invalid:
+        std::cout << "Invalid command" << std::endl;
+        break;
     }
   }
-  return 0;
-
-  std::cout << "Set value: FIRST, FIRST CONTENT"
-            << db.setValue("FIRST", "FIRST CONTENT") << std::endl;
-  std::cout << "Set value: SECOND, SECOND CONTENT"
-            << db.setValue("SECOND", "SECOND CONTENT") << std::endl;
-  std::cout << "Set value: THIRD, THIRD CONTENT"
-            << db.setValue("THIRD", "THIRD CONTENT") << std::endl;
-  std::cout << "Set value: THIRD, THIRD UPDATED"
-            << db.setValue("THIRD", "THIRD UPDATED") << std::endl;
-
-  std::cout << "Get value FIRST: " << db.getValue("FIRST") << std::endl;
-  std::cout << "Get value THIRD: " << db.getValue("THIRD") << std::endl;
-
-  std::cout << "Check if FIRST exists..." << db.exists("FIRST") << std::endl;
-  std::cout << "Check if NULL exists..." << db.exists("NULL") << std::endl;
-
-  std::cout << "DELETE SECOND" << db.deleteValue("SECOND") << std::endl;
   return 0;
 }
