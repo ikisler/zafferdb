@@ -10,7 +10,14 @@ find_package(OpenSSL REQUIRED)
 include_directories(include)
 file(GLOB SOURCES "src/*.cpp")
 
-add_executable(ZafferDb ${SOURCES})
+add_library(Zaffer ${SOURCES})
 
-target_link_libraries(ZafferDb OpenSSL::SSL)
+
+add_executable(zafferdb_server "src/server.cpp")
+add_executable(zafferdb "src/client.cpp")
+
+target_link_libraries(zafferdb_server OpenSSL::SSL)
+target_link_libraries(zafferdb OpenSSL::SSL)
+target_link_libraries(zafferdb_server Zaffer)
+target_link_libraries(zafferdb Zaffer)
 
