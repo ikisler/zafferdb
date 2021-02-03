@@ -152,7 +152,7 @@ std::string Database::getValue(std::string key) {
 
   std::fstream* file = dataFile.getReadFile();
   if (!file->is_open()) {
-    return "";
+    return "ERROR: Cannot access data file";
   }
 
   std::string line;
