@@ -8,7 +8,7 @@ This project is a simple key-store database.  It contains both a client and a se
 ### Dependencies
 - cmake >= 3.7
 - make >= 4.1
-- gcc/g++ >= 5.4
+- gcc/g++ >= 8
 - OpenSSL is a required dependency.  On my version of Ubuntu, this was installed out of the box.
 
 ### Compiling and Running
