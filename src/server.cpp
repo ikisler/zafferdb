@@ -1,12 +1,12 @@
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <string>
-#include <cstring>
-
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 
 #include "Database.h"
 #include "Parser.h"
@@ -16,16 +16,11 @@
 #define QUEUE_LENGTH 20
 #define MAX_PACKET 1025
 
-void simpleOutputHandler(bool success) {
-  std::cout << (success ? "Success!" : "Failure") << std::endl;
-}
-
 std::string getStatusOutput(bool success) {
   return (success ? "Success!" : "Failure");
 }
 
 int main() {
-
   int yes = 1;
 
   struct addrinfo hints;
@@ -42,9 +37,10 @@ int main() {
   }
 
   int sock;
-  sock = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+  sock = socket(serverInfo->ai_family, serverInfo->ai_socktype,
+                serverInfo->ai_protocol);
 
-  if(sock == -1) {
+  if (sock == -1) {
     std::cout << "ERROR: Cannot create socket" << std::endl;
     return 1;
   }
@@ -61,7 +57,7 @@ int main() {
 
   freeaddrinfo(serverInfo);
 
-  if(listen(sock, QUEUE_LENGTH) == -1) {
+  if (listen(sock, QUEUE_LENGTH) == -1) {
     std::cout << "ERROR: Cannot listen to port" << std::endl;
     return 1;
   }
@@ -80,6 +76,7 @@ int main() {
   struct sockaddr_storage clientAddress;
   socklen_t addressSize;
 
+  const char null_data(0);
 
   while (true) {
     clientSock = accept(sock, (struct sockaddr *)&clientAddress, &addressSize);
@@ -92,7 +89,8 @@ int main() {
     receiveSuccess = recv(clientSock, incomingPacket, MAX_PACKET - 1, 0);
 
     if (receiveSuccess == 0 || receiveSuccess == -1) {
-      continue; // the client has either closed the connection or something else has gone wrong
+      continue;  // the client has either closed the connection or something
+                 // else has gone wrong
     }
 
     std::stringstream input(incomingPacket);
@@ -101,29 +99,35 @@ int main() {
 
     switch (command) {
       case Command::exit:
-        std::cout << std::endl << "Adieu" << std::endl;
+        std::cout << std::endl << "Bye~" << std::endl;
         return 0;
       case Command::set:
         success = db.setValue(token.key, token.value);
         message = getStatusOutput(success);
         send(clientSock, message.c_str(), strlen(message.c_str()), 0);
-        simpleOutputHandler(success);
         break;
       case Command::get:
-        message = db.getValue(token.key);
-        send(clientSock, message.c_str(), strlen(message.c_str()), 0);
+        if (db.exists(token.key)) {
+          message = db.getValue(token.key);
+        } else {
+          message = "ERROR: Key does not exist";
+        }
+
+        if (message == "") {
+          send(clientSock, &null_data, 1, 0);
+        } else {
+          send(clientSock, message.c_str(), strlen(message.c_str()), 0);
+        }
         break;
       case Command::exists:
         success = db.exists(token.key);
         message = getStatusOutput(success);
         send(clientSock, message.c_str(), strlen(message.c_str()), 0);
-        simpleOutputHandler(success);
         break;
       case Command::remove:
         success = db.deleteValue(token.key);
         message = getStatusOutput(success);
         send(clientSock, message.c_str(), strlen(message.c_str()), 0);
-        simpleOutputHandler(success);
         break;
       case Command::invalid:
         std::cout << "Invalid command" << std::endl;
